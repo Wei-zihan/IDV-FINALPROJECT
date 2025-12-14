@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amber Desert - Anomaly Zone | Messenger Guild</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        /* --- GLOBAL STYLES --- */
+        body { 
+            margin: 0; 
+            font-family: 'Nunito', sans-serif; 
+            color: white; 
+            background-color: #0a0e17; 
+            overflow-x: hidden; 
+        }
+
+        /* --- WATCH TRANSITION --- */
+        #transition-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; display: none; overflow: hidden; }
+        .watch-graphic { position: absolute; top: 50%; left: 100%; transform: translateY(-50%) rotate(20deg); height: 80vh; width: auto; display: block; }
+        .watch-active .watch-graphic { animation: watchSwipeAnim 2s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+        #black-fade-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        @keyframes watchSwipeAnim {
+            0% { left: 100%; transform: translateY(-50%) rotate(20deg); }
+            40% { left: 0%; transform: translateY(-50%) rotate(0deg); }
+            60% { left: -20%; transform: translateY(-50%) rotate(-10deg); }
+            100% { left: -150%; transform: translateY(-50%) rotate(-30deg); }
+        }
+
+        /* --- NAVIGATION --- */
+        .navbar {
+            position: fixed; top: 0; left: 0; width: 100%; padding: 2rem; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, rgba(10,14,23,0.8), transparent);
+        }
+        .nav-back {
+            color: #a5f3fc; text-decoration: none; font-weight: 900;
+            font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px;
+            display: flex; align-items: center; gap: 10px; transition: all 0.3s;
+        }
+        .nav-back:hover { color: #fff; text-shadow: 0 0 10px #a5f3fc; }
+
+        /* --- COMMON SECTION --- */
+        section { position: relative; height: 100vh; width: 100%; overflow: hidden; }
+
+        /* --- SCREEN 1: HERO --- */
+        .hero-section {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+        }
+        .hero-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 0;
+            filter: brightness(0.4) sepia(0.2); 
+            transform: scale(1.1);
+        }
+        .grid-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(165, 243, 252, 0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(165, 243, 252, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px; z-index: 1; pointer-events: none;
+        }
+        .hero-content {
+            position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center;
+            opacity: 0; transform: translateY(30px);
+        }
+        .location-logo { width: 120px; height: auto; margin-bottom: 2rem; filter: drop-shadow(0 0 20px rgba(165, 243, 252, 0.4)); }
+        h1 { font-size: 5rem; margin: 0; color: #ffffff; letter-spacing: 5px; text-transform: uppercase; text-shadow: 0 0 30px rgba(165, 243, 252, 0.6); line-height: 1; }
+        .coordinates {
+            font-size: 1.8rem; color: #a5f3fc; margin-top: 1.5rem; font-weight: 900;
+            letter-spacing: 3px; text-transform: uppercase; background: rgba(10, 14, 23, 0.6);
+            padding: 10px 30px; border: 1px solid rgba(165, 243, 252, 0.3);
+            border-radius: 50px; backdrop-filter: blur(5px);
+        }
+
+        /* --- SCREEN 2: VIDEO REVEAL --- */
+        .video-section { background-color: #000; }
+        .media-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .reveal-video { width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 1; }
+        .static-bg {
+            width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2;
+            opacity: 1; transition: opacity 0.8s ease-in-out;
+        }
+        .static-hidden { opacity: 0; pointer-events: none; }
+
+        /* --- SCREEN 3: GAME --- */
+        .game-section {
+            background-color: #1a0f0a; 
+            background-image: 
+                radial-gradient(#fff, rgba(255,255,255,.2) 2px, transparent 3px),
+                radial-gradient(#fff, rgba(255,255,255,.15) 1px, transparent 2px);
+            background-size: 550px 550px, 350px 350px;
+            background-position: 0 0, 40px 60px;
+            cursor: default;
+        }
+        .game-active { cursor: crosshair; }
+
+        canvas { position: absolute; top: 0; left: 0; z-index: 3; display: block; }
+        
+        .game-ui {
+            position: absolute; top: 20px; right: 20px; z-index: 10;
+            font-family: 'Nunito', sans-serif; font-weight: 900;
+            font-size: 1.5rem; color: #FFD700; 
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            pointer-events: none; display: none;
+        }
+
+        .start-btn-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 30px;
+            text-align: center; width: 80%;
+        }
+        
+        .pixel-btn {
+            background: #FFD700; border: 3px solid #fff;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            color: #0a0e17; padding: 15px 40px;
+            font-family: 'Nunito', sans-serif; font-weight: 900;
+            letter-spacing: 2px; font-size: 1.5rem; cursor: pointer;
+            text-transform: uppercase; border-radius: 50px; transition: all 0.3s;
+        }
+        .pixel-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 215, 0, 0.8); background: #fff; }
+
+        .game-desc { font-size: 1.2rem; color: white; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .game-desc span { color: #FFD700; font-weight: 900; }
+
+        .final-state {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5; opacity: 0; pointer-events: none; transition: opacity 1s;
+        }
+        .final-video { width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; }
+
+    </style>
+</head>
+<body>
+
+    <div id="transition-overlay">
+        <img src="image/watch.png" alt="Giant Pocket Watch" class="watch-graphic">
+    </div>
+    <div id="black-fade-overlay"></div>
+
+    <nav class="navbar">
+        <a href="index.html?restore=btn-desert#landscapes" class="nav-back">
+            <i class="fa-solid fa-chevron-left"></i> Return
+        </a>
+        <div style="color: rgba(255,255,255,0.5); font-weight: 700;">SECTOR 03</div>
+    </nav>
+
+    <section class="hero-section">
+        <img src="image/dustbg2.png" alt="Amber Desert" class="hero-bg">
+        <div class="grid-overlay"></div>
+        <div class="hero-content">
+            <img src="image/dustlogo.png" alt="Logo" class="location-logo">
+            <h1>Amber Desert</h1>
+            <div class="coordinates">N 26°00′ E 30°00′</div>
+        </div>
+    </section>
+
+    <section class="video-section" id="section2">
+        <div class="media-container">
+            <video id="introVideo" class="reveal-video" muted playsinline preload="auto">
+                <source src="video/bearvid1.mp4" type="video/mp4">
+            </video>
+            <img id="staticCover" src="image/bearbg1.png" alt="Bear Static" class="static-bg">
+        </div>
+    </section>
+
+    <section class="game-section" id="section3">
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-ui" id="gameUI">TARGET: <span style="color:#FFD700">GEMSTONE</span></div>
+
+        <div class="start-btn-container" id="startScreen">
+            <div class="game-desc">
+                Drag and launch the <span>Time Bear</span> to<br>hit the Gem atop the Pyramid.
+            </div>
+            <button class="pixel-btn" id="startBtn">START MISSION</button>
+        </div>
+
+        <div class="final-state" id="finalState">
+            <video id="winVideo" class="final-video" muted playsinline>
+                <source src="video/bearvid2.mp4" type="video/mp4">
+            </video>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- GSAP & Video Logic ---
+            const tl = gsap.timeline();
+            gsap.to(".hero-bg", { duration: 20, scale: 1, ease: "none" });
+            tl.to(".hero-content", { duration: 1.5, opacity: 1, y: 0, ease: "power3.out" })
+              .from(".location-logo", { duration: 1, scale: 0.8, filter: "blur(10px)", ease: "power2.out" }, "-=1")
+              .from("h1", { duration: 1, opacity: 0, letterSpacing: "15px", ease: "power3.out" }, "-=0.8")
+              .from(".coordinates", { duration: 0.8, opacity: 0, y: 20, ease: "back.out(1.7)" }, "-=0.5");
+
+            const section2 = document.getElementById('section2');
+            const introVideo = document.getElementById('introVideo');
+            const staticCover = document.getElementById('staticCover');
+            
+            introVideo.addEventListener('ended', () => { staticCover.classList.remove('static-hidden'); });
+
+            const observer2 = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        introVideo.currentTime = 0;
+                        var playPromise = introVideo.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(_ => {
+                                setTimeout(() => { staticCover.classList.add('static-hidden'); }, 100);
+                            }).catch(error => console.log("Autoplay prevented:", error));
+                        }
+                    } else {
+                        introVideo.pause();
+                        staticCover.classList.remove('static-hidden');
+                    }
+                });
+            }, { threshold: 0.5 });
+            observer2.observe(section2);
+
+            // --- GAME LOGIC ---
+            const section3 = document.getElementById('section3');
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const startScreen = document.getElementById('startScreen');
+            const startBtn = document.getElementById('startBtn');
+            const gameUI = document.getElementById('gameUI');
+            const finalState = document.getElementById('finalState');
+            const winVideo = document.getElementById('winVideo');
+            const transOverlay = document.getElementById('transition-overlay');
+            const blackFade = document.getElementById('black-fade-overlay');
+            
+            let width, height;
+            let gameRunning = false;
+            let particles = [];
+            
+            const bear = {
+                x: 0, y: 0, 
+                r: 60, // 半径变大 (Drawing Size = 120x120)
+                vx: 0, vy: 0,
+                isDragging: false, isFlying: false,
+                img: new Image()
+            };
+            bear.img.src = 'image/bearpixel1.png';
+
+            const sling = { x: 0, y: 0 }; 
+            const gem = { x: 0, y: 0, size: 50, hit: false }; 
+            const pyramid = { x: 0, y: 0, w: 200, h: 300 }; 
+
+            const GRAVITY = 0.4;
+            const POWER_SCALE = 0.25;
+            
+            function resizeCanvas() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+                
+                // --- 调整区：向中间靠拢 & 变大 ---
+                // 发射台：移动到屏幕宽度的 15% 处 (不再是固定的 150px)
+                sling.x = width * 0.15; 
+                sling.y = height - 200;
+                
+                if (!bear.isFlying) {
+                    bear.x = sling.x;
+                    bear.y = sling.y;
+                }
+
+                // 金字塔：移动到屏幕宽度的 70% 处 (之前是 75%+)
+                let targetX = width * 0.70; 
+                // 防止在手机上太挤，设置最小值
+                if(targetX < sling.x + 300) targetX = sling.x + 300;
+                
+                pyramid.x = targetX;
+                pyramid.y = height - 100;
+
+                gem.x = pyramid.x + pyramid.w/2 - gem.size/2;
+                gem.y = pyramid.y - pyramid.h - gem.size;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            }
+
+            section3.addEventListener('mousedown', (e) => {
+                if (!gameRunning || bear.isFlying) return;
+                const pos = getPos(e);
+                // 增大点击检测范围 (配合变大的熊)
+                const dist = Math.hypot(pos.x - bear.x, pos.y - bear.y);
+                if (dist < 150) bear.isDragging = true;
+            });
+
+            section3.addEventListener('mousemove', (e) => {
+                if (!gameRunning) return;
+                if (bear.isDragging) {
+                    const pos = getPos(e);
+                    const dx = pos.x - sling.x;
+                    const dy = pos.y - sling.y;
+                    const dist = Math.hypot(dx, dy);
+                    const maxDist = 250; // 拉拽距离也稍微放宽
+                    
+                    if (dist > maxDist) {
+                        const ratio = maxDist / dist;
+                        bear.x = sling.x + dx * ratio;
+                        bear.y = sling.y + dy * ratio;
+                    } else {
+                        bear.x = pos.x;
+                        bear.y = pos.y;
+                    }
+                }
+            });
+
+            section3.addEventListener('mouseup', () => {
+                if (bear.isDragging) {
+                    bear.isDragging = false;
+                    bear.isFlying = true;
+                    bear.vx = (sling.x - bear.x) * POWER_SCALE;
+                    bear.vy = (sling.y - bear.y) * POWER_SCALE;
+                }
+            });
+
+            class Particle {
+                constructor(x, y) {
+                    this.x = x; this.y = y;
+                    this.vx = (Math.random() - 0.5) * 10;
+                    this.vy = (Math.random() - 0.5) * 10;
+                    this.life = 1;
+                    this.color = `rgba(255, 215, 0, ${Math.random()})`;
+                    this.size = Math.random() * 8 + 4;
+                }
+                update() { this.x += this.vx; this.y += this.vy; this.life -= 0.02; }
+                draw(ctx) {
+                    ctx.fillStyle = this.color; ctx.globalAlpha = this.life;
+                    ctx.fillRect(this.x, this.y, this.size, this.size); ctx.globalAlpha = 1;
+                }
+            }
+
+            function gameLoop() {
+                if (!gameRunning) return;
+                ctx.clearRect(0, 0, width, height);
+
+                // Ground
+                ctx.fillStyle = "#2a1a10";
+                ctx.fillRect(0, height - 100, width, 100);
+                
+                // Draw Simple Base for Sling (Launch Pad)
+                ctx.fillStyle = "#8B4513";
+                ctx.fillRect(sling.x - 10, sling.y, 20, 100);
+
+                // Pyramid
+                ctx.fillStyle = "#8B4513";
+                const steps = 5;
+                const stepHeight = pyramid.h / steps;
+                for(let i=0; i<steps; i++) {
+                    let w = pyramid.w * (1 - i/steps);
+                    let x = pyramid.x + (pyramid.w - w)/2;
+                    let y = pyramid.y - (i+1)*stepHeight;
+                    ctx.fillRect(x, height-100 - (i+1)*stepHeight + stepHeight, w, stepHeight);
+                }
+
+                // Gem
+                if (!gem.hit) {
+                    ctx.fillStyle = "#FFD700";
+                    ctx.beginPath();
+                    ctx.moveTo(gem.x + gem.size/2, gem.y);
+                    ctx.lineTo(gem.x + gem.size, gem.y + gem.size/2);
+                    ctx.lineTo(gem.x + gem.size/2, gem.y + gem.size);
+                    ctx.lineTo(gem.x, gem.y + gem.size/2);
+                    ctx.fill();
+                    ctx.shadowBlur = 20; ctx.shadowColor = "gold"; ctx.fill(); ctx.shadowBlur = 0;
+                }
+
+                // Sling Line
+                if (bear.isDragging) {
+                    ctx.beginPath();
+                    ctx.moveTo(sling.x, sling.y);
+                    ctx.lineTo(bear.x, bear.y);
+                    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+                    ctx.lineWidth = 8; // 线条加粗
+                    ctx.stroke();
+
+                    // Trajectory
+                    let simX = bear.x; let simY = bear.y;
+                    let simVx = (sling.x - bear.x) * POWER_SCALE;
+                    let simVy = (sling.y - bear.y) * POWER_SCALE;
+                    
+                    ctx.beginPath();
+                    for(let i=0; i<30; i++) {
+                        simX += simVx * 3; simY += simVy * 3; simVy += GRAVITY * 3;
+                        ctx.rect(simX, simY, 6, 6); // 预测点也变大
+                    }
+                    ctx.fillStyle = "rgba(255,215,0,0.6)"; ctx.fill();
+                }
+
+                // Bear Logic
+                if (bear.isFlying) {
+                    bear.vx *= 0.995;
+                    bear.vy += GRAVITY;
+                    bear.x += bear.vx;
+                    bear.y += bear.vy;
+
+                    if (bear.x > width || bear.y > height) {
+                        bear.isFlying = false;
+                        bear.x = sling.x; bear.y = sling.y;
+                        bear.vx = 0; bear.vy = 0;
+                    }
+
+                    // 碰撞检测：基于中心点的宽容判定
+                    // 熊的中心 bear.x, bear.y
+                    // 宝石的中心 gem.x + size/2, gem.y + size/2
+                    const bearCenterX = bear.x;
+                    const bearCenterY = bear.y;
+                    const gemCenterX = gem.x + gem.size/2;
+                    const gemCenterY = gem.y + gem.size/2;
+                    
+                    // 距离检测：如果两个中心点距离小于 (熊半径 + 宝石半径)，则判定命中
+                    const distance = Math.hypot(bearCenterX - gemCenterX, bearCenterY - gemCenterY);
+                    
+                    // 60 (熊半径) + 25 (宝石半径) = 85，放宽到 90
+                    if (!gem.hit && distance < 90) {
+                        gem.hit = true;
+                        triggerWin();
+                    }
+                }
+
+                // Draw Bear (Larger Size: 120x120)
+                if (bear.img.complete) {
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.save();
+                    ctx.translate(bear.x, bear.y);
+                    if (bear.isFlying) ctx.rotate(Math.atan2(bear.vy, bear.vx));
+                    // 绘制尺寸翻倍：-60到60 (宽120)
+                    ctx.drawImage(bear.img, -60, -60, 120, 120); 
+                    ctx.restore();
+                } else {
+                    ctx.fillStyle = "white"; ctx.fillRect(bear.x-40, bear.y-40, 80, 80);
+                }
+
+                // Particles
+                for(let i=particles.length-1; i>=0; i--) {
+                    particles[i].update();
+                    particles[i].draw(ctx);
+                    if (particles[i].life <= 0) particles.splice(i, 1);
+                }
+                requestAnimationFrame(gameLoop);
+            }
+
+            function triggerWin() {
+                for(let i=0; i<60; i++) {
+                    particles.push(new Particle(gem.x + gem.size/2, gem.y + gem.size/2));
+                }
+                
+                setTimeout(() => {
+                    gameRunning = false;
+                    canvas.style.display = 'none';
+                    gameUI.style.display = 'none';
+                    section3.style.cursor = 'default';
+                    finalState.style.opacity = 1;
+                    finalState.style.pointerEvents = 'all';
+                    winVideo.currentTime = 0;
+                    winVideo.play().catch(e => console.error("Win video failed:", e));
+                }, 1000);
+            }
+
+            winVideo.addEventListener('ended', () => {
+                transOverlay.style.display = 'block';
+                void transOverlay.offsetWidth; 
+                transOverlay.classList.add('watch-active');
+                blackFade.style.opacity = '1';
+                setTimeout(() => {
+                    window.location.href = 'index.html?restore=btn-desert#landscapes';
+                }, 1000);
+            });
+
+            startBtn.addEventListener('click', () => {
+                startScreen.style.display = 'none';
+                gameUI.style.display = 'block';
+                section3.classList.add('game-active');
+                gameRunning = true; gem.hit = false;
+                bear.x = sling.x; bear.y = sling.y;
+                bear.isFlying = false; bear.isDragging = false;
+                resizeCanvas();
+                requestAnimationFrame(gameLoop);
+            });
+        });
+    </script>
+</body>
+</html>

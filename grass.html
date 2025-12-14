@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boundless Meadow - Anomaly Zone | Messenger Guild</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        /* --- GLOBAL STYLES --- */
+        body { 
+            margin: 0; 
+            font-family: 'Nunito', sans-serif; 
+            color: white; 
+            background-color: #0a0e17; 
+            overflow-x: hidden; 
+        }
+
+        /* --- WATCH TRANSITION (移植自 index.html) --- */
+        #transition-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; display: none; overflow: hidden; }
+        .watch-graphic { position: absolute; top: 50%; left: 100%; transform: translateY(-50%) rotate(20deg); height: 80vh; width: auto; display: block; }
+        .watch-active .watch-graphic { animation: watchSwipeAnim 2s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+        #black-fade-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        @keyframes watchSwipeAnim {
+            0% { left: 100%; transform: translateY(-50%) rotate(20deg); }
+            40% { left: 0%; transform: translateY(-50%) rotate(0deg); }
+            60% { left: -20%; transform: translateY(-50%) rotate(-10deg); }
+            100% { left: -150%; transform: translateY(-50%) rotate(-30deg); }
+        }
+
+        /* --- NAVIGATION --- */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; width: 100%; padding: 2rem; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, rgba(10,14,23,0.8), transparent);
+        }
+        .nav-back {
+            color: #a5f3fc; text-decoration: none; font-weight: 900;
+            font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px;
+            display: flex; align-items: center; gap: 10px; transition: all 0.3s;
+        }
+        .nav-back:hover { color: #fff; text-shadow: 0 0 10px #a5f3fc; }
+
+        /* --- COMMON SECTION STYLES --- */
+        section {
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* --- SCREEN 1: HERO --- */
+        .hero-section {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+        }
+        .hero-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 0;
+            filter: brightness(0.4) sepia(0.2); 
+            transform: scale(1.1);
+        }
+        .grid-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(165, 243, 252, 0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(165, 243, 252, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px; z-index: 1; pointer-events: none;
+        }
+        .hero-content {
+            position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center;
+            opacity: 0; transform: translateY(30px);
+        }
+        .location-logo { width: 120px; height: auto; margin-bottom: 2rem; filter: drop-shadow(0 0 20px rgba(165, 243, 252, 0.4)); }
+        h1 { font-size: 5rem; margin: 0; color: #ffffff; letter-spacing: 5px; text-transform: uppercase; text-shadow: 0 0 30px rgba(165, 243, 252, 0.6); line-height: 1; }
+        .coordinates {
+            font-size: 1.8rem; color: #a5f3fc; margin-top: 1.5rem; font-weight: 900;
+            letter-spacing: 3px; text-transform: uppercase; background: rgba(10, 14, 23, 0.6);
+            padding: 10px 30px; border: 1px solid rgba(165, 243, 252, 0.3);
+            border-radius: 50px; backdrop-filter: blur(5px);
+        }
+
+        /* --- SCREEN 2: VIDEO REVEAL --- */
+        .video-section {
+            background-color: #000;
+        }
+        .media-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        
+        .reveal-video {
+            width: 100%; height: 100%; object-fit: cover;
+            position: absolute; z-index: 1;
+        }
+
+        .static-bg {
+            width: 100%; height: 100%; object-fit: cover;
+            position: absolute; z-index: 2;
+            opacity: 1; 
+            transition: opacity 0.8s ease-in-out; 
+        }
+
+        .static-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- SCREEN 3: INTERACTIVE GAME --- */
+        .game-section {
+            background-color: #0b1121; 
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+            cursor: default;
+        }
+        
+        .game-active {
+            cursor: none;
+        }
+
+        .final-state {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5; opacity: 0; pointer-events: none; transition: opacity 1s;
+        }
+        .final-bg { width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 1; display: none; /* 隐藏静态背景，因为我们要跳转了 */ }
+        .final-video { width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; }
+
+        canvas { position: absolute; top: 0; left: 0; z-index: 3; display: block; }
+        
+        .game-ui {
+            position: absolute; top: 20px; right: 20px; z-index: 10;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 1.5rem; color: #a5f3fc; text-shadow: 0 0 10px rgba(165, 243, 252, 0.5);
+            pointer-events: none;
+            display: none; 
+        }
+
+        .start-btn-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 30px;
+            text-align: center;
+            width: 80%;
+        }
+        
+        .pixel-btn {
+            background: #a5f3fc;
+            border: 3px solid #fff;
+            box-shadow: 0 0 20px rgba(165, 243, 252, 0.4);
+            color: #0a0e17;
+            padding: 15px 40px;
+            font-family: 'Nunito', sans-serif; 
+            font-weight: 900;
+            letter-spacing: 2px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            border-radius: 50px;
+            transition: all 0.3s;
+        }
+        
+        .pixel-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(165, 243, 252, 0.8);
+            background: #fff;
+        }
+
+        .game-desc {
+            font-size: 1.2rem; color: white; 
+            line-height: 1.6;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .game-desc span {
+            color: #a5f3fc; font-weight: 900;
+        }
+
+    </style>
+</head>
+<body>
+    
+    <div id="transition-overlay">
+        <img src="image/watch.png" alt="Giant Pocket Watch" class="watch-graphic">
+    </div>
+    <div id="black-fade-overlay"></div>
+
+    <nav class="navbar">
+        <a href="index.html?restore=btn-meadow#landscapes" class="nav-back">
+            <i class="fa-solid fa-chevron-left"></i> Return
+        </a>
+        <div style="color: rgba(255,255,255,0.5); font-weight: 700;">SECTOR 01</div>
+    </nav>
+
+    <section class="hero-section">
+        <img src="image/grassbg2.png" alt="Background" class="hero-bg">
+        <div class="grid-overlay"></div>
+        <div class="hero-content">
+            <img src="image/grasslogo.png" alt="Logo" class="location-logo">
+            <h1>Boundless Meadow</h1>
+            <div class="coordinates">N 47°00′ E 103°00′</div>
+        </div>
+    </section>
+
+    <section class="video-section" id="section2">
+        <div class="media-container">
+            <video id="introVideo" class="reveal-video" muted playsinline preload="auto">
+                <source src="video/girlvid1.mp4" type="video/mp4">
+            </video>
+            <img id="staticCover" src="image/girlbg1.png" alt="Girl Static" class="static-bg">
+        </div>
+    </section>
+
+    <section class="game-section" id="section3">
+        
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-ui" id="gameUI">WIND ENERGY: <span id="scoreDisplay">0</span>/5</div>
+
+        <div class="start-btn-container" id="startScreen">
+            <div class="game-desc">
+                Collect <span>white birds</span> to gather wind energy<br>and help the girl take flight.
+            </div>
+            <button class="pixel-btn" id="startBtn">START GAME</button>
+        </div>
+
+        <div class="final-state" id="finalState">
+            <img src="image/girlbg2.png" alt="Final Background" class="final-bg">
+            <video id="winVideo" class="final-video" muted playsinline>
+                <source src="video/girlvid2.mp4" type="video/mp4">
+            </video>
+        </div>
+
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- SCREEN 1: Animation ---
+            const tl = gsap.timeline();
+            gsap.to(".hero-bg", { duration: 20, scale: 1, ease: "none" });
+            tl.to(".hero-content", { duration: 1.5, opacity: 1, y: 0, ease: "power3.out" })
+              .from(".location-logo", { duration: 1, scale: 0.8, filter: "blur(10px)", ease: "power2.out" }, "-=1")
+              .from("h1", { duration: 1, opacity: 0, letterSpacing: "15px", ease: "power3.out" }, "-=0.8")
+              .from(".coordinates", { duration: 0.8, opacity: 0, y: 20, ease: "back.out(1.7)" }, "-=0.5");
+
+            // --- SCREEN 2: Logic ---
+            const section2 = document.getElementById('section2');
+            const introVideo = document.getElementById('introVideo');
+            const staticCover = document.getElementById('staticCover');
+            
+            introVideo.addEventListener('ended', () => {
+                staticCover.classList.remove('static-hidden'); 
+            });
+
+            const observer2 = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        introVideo.currentTime = 0;
+                        var playPromise = introVideo.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(_ => {
+                                setTimeout(() => {
+                                    staticCover.classList.add('static-hidden'); 
+                                }, 100);
+                            }).catch(error => console.log("Autoplay prevented:", error));
+                        }
+                    } else {
+                        introVideo.pause();
+                        staticCover.classList.remove('static-hidden');
+                    }
+                });
+            }, { threshold: 0.5 });
+            observer2.observe(section2);
+
+            // --- SCREEN 3: Game Logic ---
+            const section3 = document.getElementById('section3');
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.imageSmoothingEnabled = false; 
+
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const finalState = document.getElementById('finalState');
+            const winVideo = document.getElementById('winVideo');
+            const startScreen = document.getElementById('startScreen');
+            const startBtn = document.getElementById('startBtn');
+            const gameUI = document.getElementById('gameUI');
+            
+            // 转场元素
+            const transOverlay = document.getElementById('transition-overlay');
+            const blackFade = document.getElementById('black-fade-overlay');
+
+            let gameRunning = false;
+            let score = 0;
+            let birds = [];
+            
+            const imgGirl1 = new Image();
+            imgGirl1.src = 'image/girlpixel1.png'; 
+            
+            const imgGirl2 = new Image();
+            imgGirl2.src = 'image/girlpixel2.png'; 
+
+            let currentPlayerSprite = imgGirl1; 
+            let catchTimer = null; 
+
+            // 保持角色尺寸放大 (128x128)
+            const player = { x: 0, y: 0, width: 128, height: 128 };
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                player.y = canvas.height - 200; 
+                ctx.imageSmoothingEnabled = false; 
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            section3.addEventListener('mousemove', (e) => {
+                if(!gameRunning) return;
+                const rect = canvas.getBoundingClientRect();
+                player.x = e.clientX - rect.left - player.width/2;
+            });
+
+            function spawnBird() {
+                if (!gameRunning) return;
+                birds.push({
+                    x: Math.random() * (canvas.width - 40),
+                    y: -50,
+                    size: 40,
+                    speed: 3 + Math.random() * 4 
+                });
+                setTimeout(spawnBird, 1000 + Math.random() * 1500);
+            }
+
+            function gameLoop() {
+                if (!gameRunning) return;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (currentPlayerSprite.complete) { 
+                    ctx.drawImage(currentPlayerSprite, player.x, player.y, player.width, player.height);
+                } else {
+                    ctx.strokeStyle = "white";
+                    ctx.strokeRect(player.x, player.y, player.width, player.height);
+                }
+
+                for (let i = 0; i < birds.length; i++) {
+                    let b = birds[i];
+                    b.y += b.speed;
+
+                    ctx.fillStyle = "white";
+                    ctx.beginPath();
+                    ctx.rect(b.x, b.y, b.size, b.size/2); 
+                    ctx.rect(b.x - 10, b.y - 10, 10, 20); 
+                    ctx.rect(b.x + b.size, b.y - 10, 10, 20); 
+                    ctx.fill();
+
+                    if (
+                        b.x < player.x + player.width &&
+                        b.x + b.size > player.x &&
+                        b.y < player.y + player.height &&
+                        b.y + b.size/2 > player.y
+                    ) {
+                        score++;
+                        scoreDisplay.innerText = score;
+                        birds.splice(i, 1);
+                        i--;
+
+                        currentPlayerSprite = imgGirl2; 
+                        
+                        if (catchTimer) clearTimeout(catchTimer);
+                        
+                        catchTimer = setTimeout(() => {
+                            currentPlayerSprite = imgGirl1;
+                        }, 500);
+
+                        if (score >= 5) {
+                            winGame();
+                        }
+                    } 
+                    else if (b.y > canvas.height) {
+                        birds.splice(i, 1);
+                        i--;
+                    }
+                }
+                requestAnimationFrame(gameLoop);
+            }
+
+            startBtn.addEventListener('click', () => {
+                startScreen.style.display = 'none'; 
+                gameUI.style.display = 'block';     
+                section3.classList.add('game-active'); 
+                
+                gameRunning = true;
+                score = 0;
+                birds = [];
+                scoreDisplay.innerText = "0";
+                
+                currentPlayerSprite = imgGirl1;
+                
+                resizeCanvas();
+                spawnBird();
+                requestAnimationFrame(gameLoop);
+            });
+
+            function winGame() {
+                gameRunning = false;
+                
+                canvas.style.display = 'none';
+                gameUI.style.display = 'none';
+                section3.classList.remove('game-active'); 
+
+                finalState.style.opacity = 1;
+                finalState.style.pointerEvents = 'all';
+                
+                winVideo.currentTime = 0;
+                winVideo.play().catch(e => console.error("Win video failed:", e));
+            }
+
+            // --- 核心修改：视频结束后触发转场 ---
+            winVideo.addEventListener('ended', () => {
+                // 不再隐藏视频露出背景，而是直接开始转场
+                
+                // 1. 显示转场遮罩
+                transOverlay.style.display = 'block';
+                // 强制重绘以触发动画
+                void transOverlay.offsetWidth; 
+                
+                // 2. 启动动画和黑场
+                transOverlay.classList.add('watch-active');
+                blackFade.style.opacity = '1';
+
+                // 3. 延迟1秒跳转（等待动画遮挡屏幕）
+                setTimeout(() => {
+                    window.location.href = 'index.html?restore=btn-meadow#landscapes';
+                }, 1000);
+            });
+        });
+    </script>
+</body>
+</html>

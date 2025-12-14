@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlight Sea - Anomaly Zone | Messenger Guild</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        /* --- GLOBAL STYLES --- */
+        body { 
+            margin: 0; 
+            font-family: 'Nunito', sans-serif; 
+            color: white; 
+            background-color: #0a0e17; 
+            overflow-x: hidden; 
+        }
+
+        /* --- WATCH TRANSITION --- */
+        #transition-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; display: none; overflow: hidden; }
+        .watch-graphic { position: absolute; top: 50%; left: 100%; transform: translateY(-50%) rotate(20deg); height: 80vh; width: auto; display: block; }
+        .watch-active .watch-graphic { animation: watchSwipeAnim 2s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+        #black-fade-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        @keyframes watchSwipeAnim {
+            0% { left: 100%; transform: translateY(-50%) rotate(20deg); }
+            40% { left: 0%; transform: translateY(-50%) rotate(0deg); }
+            60% { left: -20%; transform: translateY(-50%) rotate(-10deg); }
+            100% { left: -150%; transform: translateY(-50%) rotate(-30deg); }
+        }
+
+        /* --- NAVIGATION --- */
+        .navbar {
+            position: fixed; top: 0; left: 0; width: 100%; padding: 2rem; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, rgba(10,14,23,0.8), transparent);
+        }
+        .nav-back {
+            color: #a5f3fc; text-decoration: none; font-weight: 900;
+            font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px;
+            display: flex; align-items: center; gap: 10px; transition: all 0.3s;
+        }
+        .nav-back:hover { color: #fff; text-shadow: 0 0 10px #a5f3fc; }
+
+        /* --- COMMON SECTION --- */
+        section { position: relative; height: 100vh; width: 100%; overflow: hidden; }
+
+        /* --- SCREEN 1: HERO --- */
+        .hero-section {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+        }
+        .hero-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 0;
+            filter: brightness(0.4) sepia(0.2); 
+            transform: scale(1.1);
+        }
+        .grid-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(165, 243, 252, 0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(165, 243, 252, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px; z-index: 1; pointer-events: none;
+        }
+        .hero-content {
+            position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center;
+            opacity: 0; transform: translateY(30px);
+        }
+        .location-logo { width: 120px; height: auto; margin-bottom: 2rem; filter: drop-shadow(0 0 20px rgba(165, 243, 252, 0.4)); }
+        h1 { font-size: 5rem; margin: 0; color: #ffffff; letter-spacing: 5px; text-transform: uppercase; text-shadow: 0 0 30px rgba(165, 243, 252, 0.6); line-height: 1; }
+        .coordinates {
+            font-size: 1.8rem; color: #a5f3fc; margin-top: 1.5rem; font-weight: 900;
+            letter-spacing: 3px; text-transform: uppercase; background: rgba(10, 14, 23, 0.6);
+            padding: 10px 30px; border: 1px solid rgba(165, 243, 252, 0.3);
+            border-radius: 50px; backdrop-filter: blur(5px);
+        }
+
+        /* --- SCREEN 2: VIDEO REVEAL --- */
+        .video-section { background-color: #000; }
+        .media-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .reveal-video { width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 1; }
+        .static-bg {
+            width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2;
+            opacity: 1; transition: opacity 0.8s ease-in-out;
+        }
+        .static-hidden { opacity: 0; pointer-events: none; }
+
+        /* --- SCREEN 3: GAME --- */
+        .game-section {
+            background-color: #001f3f; 
+            background-image: 
+                radial-gradient(rgba(255,255,255,0.1) 2px, transparent 3px),
+                radial-gradient(rgba(255,255,255,0.05) 1px, transparent 2px);
+            background-size: 550px 550px, 350px 350px;
+            background-position: 0 0, 40px 60px;
+            cursor: pointer;
+        }
+        .game-active { cursor: pointer; } 
+
+        canvas { position: absolute; top: 0; left: 0; z-index: 3; display: block; }
+        
+        .game-ui {
+            position: absolute; top: 20px; right: 20px; z-index: 10;
+            font-family: 'Nunito', sans-serif; font-weight: 900;
+            font-size: 1.5rem; color: #00BFFF; 
+            text-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+            pointer-events: none; display: none;
+        }
+
+        .start-btn-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 30px;
+            text-align: center; width: 80%;
+        }
+        
+        .pixel-btn {
+            background: #00BFFF; border: 3px solid #fff;
+            box-shadow: 0 0 20px rgba(0, 191, 255, 0.4);
+            color: #0a0e17; padding: 15px 40px;
+            font-family: 'Nunito', sans-serif; font-weight: 900;
+            letter-spacing: 2px; font-size: 1.5rem; cursor: pointer;
+            text-transform: uppercase; border-radius: 50px; transition: all 0.3s;
+        }
+        .pixel-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(0, 191, 255, 0.8); background: #fff; }
+
+        .game-desc { font-size: 1.2rem; color: white; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .game-desc span { color: #00BFFF; font-weight: 900; }
+
+        .final-state {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5; opacity: 0; pointer-events: none; transition: opacity 1s;
+        }
+        .final-video { width: 100%; height: 100%; object-fit: cover; position: absolute; z-index: 2; }
+
+    </style>
+</head>
+<body>
+
+    <div id="transition-overlay">
+        <img src="image/watch.png" alt="Giant Pocket Watch" class="watch-graphic">
+    </div>
+    <div id="black-fade-overlay"></div>
+
+    <nav class="navbar">
+        <a href="index.html?restore=btn-sea#landscapes" class="nav-back">
+            <i class="fa-solid fa-chevron-left"></i> Return
+        </a>
+        <div style="color: rgba(255,255,255,0.5); font-weight: 700;">SECTOR 02</div>
+    </nav>
+
+    <section class="hero-section">
+        <img src="image/oceanbg2.png" alt="Starlight Sea" class="hero-bg">
+        <div class="grid-overlay"></div>
+        <div class="hero-content">
+            <img src="image/oceanlogo.png" alt="Logo" class="location-logo">
+            <h1>Starlight Sea</h1>
+            <div class="coordinates">N 11°00′ E 142°00′</div>
+        </div>
+    </section>
+
+    <section class="video-section" id="section2">
+        <div class="media-container">
+            <video id="introVideo" class="reveal-video" muted playsinline preload="auto">
+                <source src="video/boyvid1.mp4" type="video/mp4">
+            </video>
+            <img id="staticCover" src="image/boybg1.png" alt="Boy Static" class="static-bg">
+        </div>
+    </section>
+
+    <section class="game-section" id="section3">
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-ui" id="gameUI">TARGET: <span style="color:#FF4500">CRITICAL ZONE</span></div>
+
+        <div class="start-btn-container" id="startScreen">
+            <div class="game-desc">
+                Wait for the marker to hit the <span>Red Zone</span>.<br>Click to strike the Abyss Whale.
+            </div>
+            <button class="pixel-btn" id="startBtn">ENGAGE</button>
+        </div>
+
+        <div class="final-state" id="finalState">
+            <video id="winVideo" class="final-video" muted playsinline>
+                <source src="video/boyvid2.mp4" type="video/mp4">
+            </video>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- GSAP & Video Logic ---
+            const tl = gsap.timeline();
+            gsap.to(".hero-bg", { duration: 20, scale: 1, ease: "none" });
+            tl.to(".hero-content", { duration: 1.5, opacity: 1, y: 0, ease: "power3.out" })
+              .from(".location-logo", { duration: 1, scale: 0.8, filter: "blur(10px)", ease: "power2.out" }, "-=1")
+              .from("h1", { duration: 1, opacity: 0, letterSpacing: "15px", ease: "power3.out" }, "-=0.8")
+              .from(".coordinates", { duration: 0.8, opacity: 0, y: 20, ease: "back.out(1.7)" }, "-=0.5");
+
+            const section2 = document.getElementById('section2');
+            const introVideo = document.getElementById('introVideo');
+            const staticCover = document.getElementById('staticCover');
+            
+            introVideo.addEventListener('ended', () => { staticCover.classList.remove('static-hidden'); });
+
+            const observer2 = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        introVideo.currentTime = 0;
+                        var playPromise = introVideo.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(_ => {
+                                setTimeout(() => { staticCover.classList.add('static-hidden'); }, 100);
+                            }).catch(error => console.log("Autoplay prevented:", error));
+                        }
+                    } else {
+                        introVideo.pause();
+                        staticCover.classList.remove('static-hidden');
+                    }
+                });
+            }, { threshold: 0.5 });
+            observer2.observe(section2);
+
+            // --- GAME LOGIC ---
+            const section3 = document.getElementById('section3');
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const startScreen = document.getElementById('startScreen');
+            const startBtn = document.getElementById('startBtn');
+            const gameUI = document.getElementById('gameUI');
+            const finalState = document.getElementById('finalState');
+            const winVideo = document.getElementById('winVideo');
+            const transOverlay = document.getElementById('transition-overlay');
+            const blackFade = document.getElementById('black-fade-overlay');
+            
+            let width, height;
+            let gameRunning = false;
+            let particles = [];
+            
+            // Assets
+            const imgBoyIdle = new Image(); imgBoyIdle.src = 'image/boypixel1.png';
+            const imgBoyAttack = new Image(); imgBoyAttack.src = 'image/boypixel2.png';
+            const imgWhale = new Image(); imgWhale.src = 'image/whalepixel.png';
+
+            // 尺寸翻倍 (2x)
+            const boy = { x: 0, y: 0, w: 240, h: 240, state: 'idle' }; 
+            const whale = { x: 0, y: 0, w: 400, h: 400, shake: 0 };
+            
+            // --- 核心调整：速度降为 2 ---
+            const bar = { 
+                w: 400, h: 30, x: 0, y: 0, 
+                markerX: 0, markerDir: 1, 
+                markerSpeed: 2 // 极慢速，确保容易通过
+            };
+
+            function resizeCanvas() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+                
+                boy.x = width * 0.15; 
+                boy.y = height / 2 - boy.h / 2;
+
+                whale.x = width * 0.75;
+                if (whale.x + whale.w > width) whale.x = width - whale.w - 20;
+                whale.y = height / 2 - whale.h / 2;
+
+                bar.x = width / 2 - bar.w / 2;
+                bar.y = height - 100;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            section3.addEventListener('mousedown', () => {
+                if (!gameRunning || boy.state === 'attack') return;
+
+                // Hit Logic
+                const relativeX = bar.markerX; 
+                if (relativeX > 180 && relativeX < 220) {
+                    performAttack();
+                } else {
+                    console.log("Miss!");
+                }
+            });
+
+            function performAttack() {
+                boy.state = 'attack'; 
+                triggerExplosion(whale.x + whale.w/2, whale.y + whale.h/2);
+                setTimeout(() => { endGame(); }, 1500);
+            }
+
+            class Particle {
+                constructor(x, y) {
+                    this.x = x; this.y = y;
+                    this.vx = (Math.random() - 0.5) * 15;
+                    this.vy = (Math.random() - 0.5) * 15;
+                    this.life = 1;
+                    this.color = `rgba(255, 255, 255, ${Math.random()})`;
+                    this.size = Math.random() * 10 + 5;
+                }
+                update() { this.x += this.vx; this.y += this.vy; this.life -= 0.03; }
+                draw(ctx) {
+                    ctx.fillStyle = this.color; ctx.globalAlpha = this.life;
+                    ctx.fillRect(this.x, this.y, this.size, this.size); ctx.globalAlpha = 1;
+                }
+            }
+
+            function triggerExplosion(x, y) {
+                for(let i=0; i<80; i++) {
+                    particles.push(new Particle(x, y));
+                }
+            }
+
+            function gameLoop() {
+                if (!gameRunning) return;
+                ctx.clearRect(0, 0, width, height);
+                ctx.imageSmoothingEnabled = false;
+
+                // UI: Bar
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.fillRect(bar.x, bar.y, bar.w, bar.h);
+                // Green
+                ctx.fillStyle = "#2ECC40"; 
+                ctx.fillRect(bar.x, bar.y, 150, bar.h);
+                ctx.fillRect(bar.x + 250, bar.y, 150, bar.h);
+                // Yellow
+                ctx.fillStyle = "#FFDC00";
+                ctx.fillRect(bar.x + 150, bar.y, 30, bar.h);
+                ctx.fillRect(bar.x + 220, bar.y, 30, bar.h);
+                // Red
+                ctx.fillStyle = "#FF4136";
+                ctx.fillRect(bar.x + 180, bar.y, 40, bar.h);
+
+                // Marker
+                if (boy.state !== 'attack') {
+                    bar.markerX += bar.markerSpeed * bar.markerDir;
+                    if (bar.markerX <= 0 || bar.markerX >= bar.w) {
+                        bar.markerDir *= -1;
+                    }
+                }
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fillRect(bar.x + bar.markerX - 2, bar.y - 5, 4, bar.h + 10);
+
+                // Boy
+                let currentBoyImg = (boy.state === 'attack') ? imgBoyAttack : imgBoyIdle;
+                if (currentBoyImg.complete) {
+                    ctx.drawImage(currentBoyImg, boy.x, boy.y, boy.w, boy.h);
+                } else {
+                    ctx.fillStyle = "blue"; ctx.fillRect(boy.x, boy.y, boy.w, boy.h);
+                }
+
+                // Whale
+                if (imgWhale.complete) {
+                    ctx.drawImage(imgWhale, whale.x, whale.y, whale.w, whale.h);
+                } else {
+                    ctx.fillStyle = "gray"; ctx.fillRect(whale.x, whale.y, whale.w, whale.h);
+                }
+
+                // Particles
+                for(let i=particles.length-1; i>=0; i--) {
+                    particles[i].update();
+                    particles[i].draw(ctx);
+                    if (particles[i].life <= 0) particles.splice(i, 1);
+                }
+                requestAnimationFrame(gameLoop);
+            }
+
+            function endGame() {
+                gameRunning = false;
+                canvas.style.display = 'none';
+                gameUI.style.display = 'none';
+                section3.style.cursor = 'default';
+                finalState.style.opacity = 1;
+                finalState.style.pointerEvents = 'all';
+                winVideo.currentTime = 0;
+                winVideo.play().catch(e => console.error("Win video failed:", e));
+            }
+
+            winVideo.addEventListener('ended', () => {
+                transOverlay.style.display = 'block';
+                void transOverlay.offsetWidth; 
+                transOverlay.classList.add('watch-active');
+                blackFade.style.opacity = '1';
+                setTimeout(() => {
+                    window.location.href = 'index.html?restore=btn-sea#landscapes';
+                }, 1000);
+            });
+
+            startBtn.addEventListener('click', () => {
+                startScreen.style.display = 'none';
+                gameUI.style.display = 'block';
+                section3.classList.add('game-active');
+                
+                gameRunning = true;
+                boy.state = 'idle';
+                bar.markerX = 0;
+                particles = [];
+                resizeCanvas();
+                requestAnimationFrame(gameLoop);
+            });
+        });
+    </script>
+</body>
+</html>
